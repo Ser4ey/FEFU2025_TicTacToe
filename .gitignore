@@ -1,0 +1,5 @@
+.sqlite3
+venv
+db.sqlite3
+/frontend/node_modules/
+node_modules
