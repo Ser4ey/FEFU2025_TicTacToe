@@ -32,8 +32,12 @@
 - npm или yarn
 
 ### Backend (Django)
+1. Перейдите в папку backend:
+```bash
+cd backend
+```
 
-1. Создайте виртуальное окружение:
+2. Создайте виртуальное окружение:
 ```bash
 python -m venv venv
 venv\Scripts\activate  # Windows
@@ -41,23 +45,23 @@ venv\Scripts\activate  # Windows
 source venv/bin/activate  # Linux/Mac
 ```
 
-2. Установите зависимости:
+3. Установите зависимости:
 ```bash
 pip install -r requirements.txt
 ```
 
-3. Выполните миграции:
+4. Выполните миграции:
 ```bash
 python manage.py makemigrations
 python manage.py migrate
 ```
 
-4. Создайте суперпользователя (опционально):
+5. Создайте суперпользователя (опционально):
 ```bash
 python manage.py createsuperuser
 ```
 
-5. Запустите сервер:
+6. Запустите сервер:
 ```bash
 python manage.py runserver
 ```
@@ -107,23 +111,23 @@ Frontend будет доступен по адресу: http://localhost:3000
 
 ```
 ttac/
-├── manage.py
-├── requirements.txt
-├── README.md
-├── tictactoe/          # Настройки Django
-│   ├── __init__.py
-│   ├── settings.py
-│   ├── urls.py
-│   └── wsgi.py
-├── game/               # Django приложение
-│   ├── __init__.py
-│   ├── admin.py
-│   ├── apps.py
-│   ├── models.py
-│   ├── serializers.py
-│   ├── urls.py
-│   └── views.py
-└── frontend/           # React приложение
+├── backend/
+│   ├── manage.py
+│   ├── requirements.txt
+│   ├── tictactoe/          # Настройки Django
+│   │   ├── __init__.py
+│   │   ├── settings.py
+│   │   ├── urls.py
+│   │   └── wsgi.py
+│   └── game/               # Django приложение
+│       ├── __init__.py
+│       ├── admin.py
+│       ├── apps.py
+│       ├── models.py
+│       ├── serializers.py
+│       ├── urls.py
+│       └── views.py
+└── frontend/               # React приложение
     ├── package.json
     ├── public/
     │   └── index.html
@@ -168,6 +172,7 @@ ttac/
 
 Backend (порт 8000):
 ```bash
+cd backend
 python manage.py runserver
 ```
 
