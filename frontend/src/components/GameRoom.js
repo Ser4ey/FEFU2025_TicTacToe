@@ -23,7 +23,7 @@ function GameRoom({ user, onLogout }) {
       setGame(response.data.game);
       setError('');
     } catch (error) {
-      console.error('Error fetching room data:', error);
+      console.error('Ошибка загрузки данных комнаты:', error);
       setError('Ошибка загрузки данных комнаты');
     } finally {
       setLoading(false);
@@ -34,7 +34,7 @@ function GameRoom({ user, onLogout }) {
     if (!game || game.status !== 'ongoing') return;
     if (game.board[row][col] !== '') return;
     
-    // Проверяем, чей ход
+    //проверяем, чей ход
     const isPlayerX = game.player_x.id === user.id;
     const isPlayerO = game.player_o.id === user.id;
     const isMyTurn = (isPlayerX && game.current_turn === 'X') || (isPlayerO && game.current_turn === 'O');
@@ -48,7 +48,7 @@ function GameRoom({ user, onLogout }) {
       });
       setGame(response.data.game);
     } catch (error) {
-      console.error('Error making move:', error);
+      console.error('Ошибка при совершении хода:', error);
       alert(error.response?.data?.error || 'Ошибка при совершении хода');
     }
   };
@@ -59,7 +59,7 @@ function GameRoom({ user, onLogout }) {
         await axios.post(`/api/rooms/${roomId}/leave/`);
         navigate('/');
       } catch (error) {
-        console.error('Error leaving room:', error);
+        console.error('Ошибка при выходе из комнаты:', error);
       }
     }
   };

@@ -16,16 +16,18 @@ from .serializers import (
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
+#регистрация пользователя
 def register(request):
     serializer = RegisterSerializer(data=request.data)
     if serializer.is_valid():
         user = serializer.save()
-        return Response({'message': 'User created successfully'}, status=status.HTTP_201_CREATED)
+        return Response({'message': 'Пользователь успешно создан'}, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def login_view(request):
+    #логин, получаем из запроса данные и проверяем
     username = request.data.get('username')
     password = request.data.get('password')
     
@@ -33,16 +35,17 @@ def login_view(request):
     if user:
         login(request, user)
         return Response({
-            'message': 'Login successful',
+            'message': 'Успешный вход',
             'user': UserSerializer(user).data
         })
-    return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+    return Response({'error': 'Неверные данные'}, status=status.HTTP_401_UNAUTHORIZED)
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def logout_view(request):
+    #разлогиниваем юзера
     logout(request)
-    return Response({'message': 'Logout successful'})
+    return Response({'message': 'Успешный выход'})
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -52,19 +55,22 @@ def current_user(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def user_stats(request):
+    #получаем статистику
     profile, created = UserProfile.objects.get_or_create(user=request.user)
     return Response(UserProfileSerializer(profile).data)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def room_list(request):
+    #получаем список комнат
     rooms = Room.objects.filter(status__in=[Room.WAITING, Room.PLAYING]).order_by('-created_at')
     return Response(RoomSerializer(rooms, many=True).data)
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def create_room(request):
-    name = request.data.get('name', f"{request.user.username}'s room")
+    #создаем новую комнату, имя по дефолту с ником пользователя
+    name = request.data.get('name', f"Комната {request.user.username}")
     room = Room.objects.create(name=name, creator=request.user)
     room.players.add(request.user)
     return Response(RoomSerializer(room).data, status=status.HTTP_201_CREATED)
@@ -72,34 +78,39 @@ def create_room(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def join_room(request, room_id):
+    #подключаемся к комнате, если есть место и статус позволяет
     room = get_object_or_404(Room, id=room_id)
     
     if room.status != Room.WAITING:
-        return Response({'error': 'Room is not available'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'error': 'Комната недоступна'}, status=status.HTTP_400_BAD_REQUEST)
     
     if room.player_count >= 2:
-        return Response({'error': 'Room is full'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'error': 'Комната заполнена'}, status=status.HTTP_400_BAD_REQUEST)
     
     if request.user in room.players.all():
-        return Response({'error': 'Already in room'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'error': 'Уже в комнате'}, status=status.HTTP_400_BAD_REQUEST)
     
     room.players.add(request.user)
     
-    # Start game if room is full
+    #если комната заполнилась начинаем игру
     if room.player_count == 2:
         room.status = Room.PLAYING
         room.save()
-        
-        # Create game
+
+        # ЯВНО проверяем и удаляем любую существующую игру для этой комнаты, используя filter().delete()
+        # Этот метод более надежен для гарантии немедленного удаления в рамках транзакции.
+        Game.objects.filter(room=room).delete()
+
+        #создание новой игры
         players = list(room.players.all())
-        random.shuffle(players)  # Randomly assign X and O
-        
+        random.shuffle(players)
+
         Game.objects.create(
             room=room,
             player_x=players[0],
             player_o=players[1]
         )
-    
+
     return Response(RoomSerializer(room).data)
 
 @api_view(['POST'])
@@ -107,7 +118,7 @@ def join_room(request, room_id):
 def quick_game(request):
     from django.db.models import Count
     
-    # Find a waiting room with 1 player
+    #ищем свободную комнату с одним игроком
     available_room = Room.objects.annotate(
         player_count_annotated=Count('players')
     ).filter(
@@ -116,12 +127,12 @@ def quick_game(request):
     ).exclude(players=request.user).first()
     
     if available_room:
-        # Join existing room
+        #заходим в существующую комнату
         available_room.players.add(request.user)
         available_room.status = Room.PLAYING
         available_room.save()
         
-        # Create game
+        #создание игры
         players = list(available_room.players.all())
         random.shuffle(players)
         
@@ -136,9 +147,9 @@ def quick_game(request):
             'action': 'joined'
         })
     else:
-        # Create new room
+        #если нет подходящих комнат создаем новую
         room = Room.objects.create(
-            name=f"{request.user.username}'s quick game",
+            name=f"Быстрая игра {request.user.username}",
             creator=request.user
         )
         room.players.add(request.user)
@@ -151,14 +162,15 @@ def quick_game(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def room_detail(request, room_id):
+    #возвращаем инфу о комнате (и игре если уже началась)
     room = get_object_or_404(Room, id=room_id)
     
     if request.user not in room.players.all():
-        return Response({'error': 'Not a player in this room'}, status=status.HTTP_403_FORBIDDEN)
+        return Response({'error': 'Не является игроком в комнате'}, status=status.HTTP_403_FORBIDDEN)
     
     data = RoomSerializer(room).data
     
-    # Add game data if exists
+    #добавляем данные игры если она уже есть
     try:
         game = room.game
         data['game'] = GameSerializer(game).data
@@ -170,15 +182,16 @@ def room_detail(request, room_id):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def make_move(request, room_id):
+    #ход игрока в активной игре
     room = get_object_or_404(Room, id=room_id)
     
     if request.user not in room.players.all():
-        return Response({'error': 'Not a player in this room'}, status=status.HTTP_403_FORBIDDEN)
+        return Response({'error': 'Не является игроком в комнате'}, status=status.HTTP_403_FORBIDDEN)
     
     try:
         game = room.game
     except Game.DoesNotExist:
-        return Response({'error': 'No active game'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'error': 'Нет активной игры'}, status=status.HTTP_400_BAD_REQUEST)
     
     serializer = MakeMoveSerializer(data=request.data)
     if not serializer.is_valid():
@@ -192,7 +205,7 @@ def make_move(request, room_id):
     if not success:
         return Response({'error': message}, status=status.HTTP_400_BAD_REQUEST)
     
-    # Update statistics if game finished
+    #когда игра закончилась, обновляем статистику и статус игры
     if game.status != Game.ONGOING:
         game.finished_at = timezone.now()
         game.save()
@@ -200,7 +213,7 @@ def make_move(request, room_id):
         room.status = Room.FINISHED
         room.save()
         
-        # Update player statistics
+        #статистика
         for player in [game.player_x, game.player_o]:
             profile, created = UserProfile.objects.get_or_create(user=player)
             profile.games_played += 1
@@ -225,42 +238,50 @@ def leave_room(request, room_id):
     room = get_object_or_404(Room, id=room_id)
     
     if request.user not in room.players.all():
-        return Response({'error': 'Not in this room'}, status=status.HTTP_400_BAD_REQUEST)
-    
-    room.players.remove(request.user)
-    
-    # Delete room if empty
+        return Response({'error': 'Не является игроком в комнате'}, status=status.HTTP_400_BAD_REQUEST)
+
+    #найдем связанную игру если она есть
+    game = None
+    try:
+        game = room.game
+    except Game.DoesNotExist:
+        pass
+
+    #если игра существует и была в процессе  начисляем победу/поражение и обновляем статистику
+    if game and game.status == Game.ONGOING:
+         other_player = room.players.exclude(id=request.user.id).first()
+         if other_player:
+            game.winner = other_player
+            game.status = Game.X_WINS if other_player == game.player_x else Game.O_WINS
+            game.finished_at = timezone.now()
+            game.save()
+
+            #обновляем статистику
+            winner_profile, _ = UserProfile.objects.get_or_create(user=other_player)
+            loser_profile, _ = UserProfile.objects.get_or_create(user=request.user)
+
+            winner_profile.games_played += 1
+            winner_profile.wins += 1
+            winner_profile.save()
+
+            loser_profile.games_played += 1
+            loser_profile.losses += 1
+            loser_profile.save()
+
+    #удаляем объект игры, если он был найден
+    if game:
+        game.delete()
+
+    room.players.remove(request.user) #удаляем игрока из комнаты ПОСЛЕ обработки статистики и игры
+
+    #если комната пустая - удаляем её
     if room.player_count == 0:
         room.delete()
-        return Response({'message': 'Left room and room deleted'})
-    
-    # If game was in progress, end it
-    if room.status == Room.PLAYING:
-        try:
-            game = room.game
-            if game.status == Game.ONGOING:
-                # Other player wins by forfeit
-                other_player = room.players.first()
-                game.winner = other_player
-                game.status = Game.X_WINS if other_player == game.player_x else Game.O_WINS
-                game.finished_at = timezone.now()
-                game.save()
-                
-                # Update statistics
-                winner_profile, _ = UserProfile.objects.get_or_create(user=other_player)
-                loser_profile, _ = UserProfile.objects.get_or_create(user=request.user)
-                
-                winner_profile.games_played += 1
-                winner_profile.wins += 1
-                winner_profile.save()
-                
-                loser_profile.games_played += 1
-                loser_profile.losses += 1
-                loser_profile.save()
-        except Game.DoesNotExist:
-            pass
-        
-        room.status = Room.FINISHED
+        return Response({'message': 'Вышел из комнаты, комната удалена'})
+
+    # Если остался один игрок, переводим комнату в статус ожидания, чтобы другие могли зайти и поиграть
+    if room.player_count == 1:
+        room.status = Room.WAITING
         room.save()
-    
-    return Response({'message': 'Left room'})
+
+    return Response({'message': 'Вышел из комнаты'})

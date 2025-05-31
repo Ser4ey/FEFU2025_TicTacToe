@@ -46,7 +46,7 @@ function App() {
       await axios.post('/api/logout/');
       setUser(null);
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error('Ошибка при выходе:', error);
     }
   };
 

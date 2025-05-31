@@ -16,7 +16,7 @@ function Stats({ user, onLogout }) {
       const response = await axios.get('/api/stats/');
       setStats(response.data);
     } catch (error) {
-      console.error('Error fetching stats:', error);
+      console.error('Ошибка загрузки статистики:', error);
       setError('Ошибка загрузки статистики');
     } finally {
       setLoading(false);

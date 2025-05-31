@@ -13,7 +13,7 @@ function Home({ user, onLogout }) {
       const roomId = response.data.room.id;
       navigate(`/room/${roomId}`);
     } catch (error) {
-      console.error('Quick game error:', error);
+      console.error('Ошибка при создании быстрой игры:', error);
       alert('Ошибка при создании быстрой игры');
     } finally {
       setLoading(false);
