@@ -96,17 +96,21 @@ def join_room(request, room_id):
     if room.player_count == 2:
         room.status = Room.PLAYING
         room.save()
-        
-        #создание игры
+
+        # ЯВНО проверяем и удаляем любую существующую игру для этой комнаты, используя filter().delete()
+        # Этот метод более надежен для гарантии немедленного удаления в рамках транзакции.
+        Game.objects.filter(room=room).delete()
+
+        #создание новой игры
         players = list(room.players.all())
-        random.shuffle(players)  #на рандом крестик или нолик
-        
+        random.shuffle(players)
+
         Game.objects.create(
             room=room,
             player_x=players[0],
             player_o=players[1]
         )
-    
+
     return Response(RoomSerializer(room).data)
 
 @api_view(['POST'])
@@ -235,41 +239,50 @@ def leave_room(request, room_id):
     
     if request.user not in room.players.all():
         return Response({'error': 'Не является игроком в комнате'}, status=status.HTTP_400_BAD_REQUEST)
-    
-    room.players.remove(request.user)
-    
+
+    # Найдем связанную игру, если она есть
+    game = None
+    try:
+        game = room.game
+    except Game.DoesNotExist:
+        pass # Игры нет, ничего страшного
+
+    # Если игра существует и была в процессе, начисляем победу/поражение и обновляем статистику
+    if game and game.status == Game.ONGOING:
+         other_player = room.players.exclude(id=request.user.id).first() # Ищем другого игрока ДО удаления текущего из many-to-many
+         if other_player: # Убеждаемся, что другой игрок существует
+            game.winner = other_player
+            game.status = Game.X_WINS if other_player == game.player_x else Game.O_WINS
+            game.finished_at = timezone.now()
+            game.save()
+
+            #обновляем статистику
+            winner_profile, _ = UserProfile.objects.get_or_create(user=other_player)
+            loser_profile, _ = UserProfile.objects.get_or_create(user=request.user)
+
+            winner_profile.games_played += 1
+            winner_profile.wins += 1
+            winner_profile.save()
+
+            loser_profile.games_played += 1
+            loser_profile.losses += 1
+            loser_profile.save()
+
+    # Удаляем объект игры, если он был найден. Это должно происходить всегда, если игра была связана с комнатой
+    if game:
+        game.delete()
+
+    room.players.remove(request.user) # Удаляем игрока из комнаты ПОСЛЕ обработки статистики и игры
+
     #если комната пустая - удаляем её
     if room.player_count == 0:
         room.delete()
         return Response({'message': 'Вышел из комнаты, комната удалена'})
-    
-    #если игра шла - заканчиваем её
-    if room.status == Room.PLAYING:
-        try:
-            game = room.game
-            if game.status == Game.ONGOING:
-                #другой игрок побеждает тк первый вышел
-                other_player = room.players.first()
-                game.winner = other_player
-                game.status = Game.X_WINS if other_player == game.player_x else Game.O_WINS
-                game.finished_at = timezone.now()
-                game.save()
-                
-                #обновляем статистику
-                winner_profile, _ = UserProfile.objects.get_or_create(user=other_player)
-                loser_profile, _ = UserProfile.objects.get_or_create(user=request.user)
-                
-                winner_profile.games_played += 1
-                winner_profile.wins += 1
-                winner_profile.save()
-                
-                loser_profile.games_played += 1
-                loser_profile.losses += 1
-                loser_profile.save()
-        except Game.DoesNotExist:
-            pass
-        
-        room.status = Room.FINISHED
+
+    # Если остался один игрок, переводим комнату в статус ожидания
+    # Эта проверка теперь происходит после удаления игрока
+    if room.player_count == 1:
+        room.status = Room.WAITING
         room.save()
-    
+
     return Response({'message': 'Вышел из комнаты'})
