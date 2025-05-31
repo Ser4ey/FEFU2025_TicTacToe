@@ -245,7 +245,7 @@ def leave_room(request, room_id):
     try:
         game = room.game
     except Game.DoesNotExist:
-        pass # Игры нет, ничего страшного
+        pass
 
     #если игра существует и была в процессе  начисляем победу/поражение и обновляем статистику
     if game and game.status == Game.ONGOING:
