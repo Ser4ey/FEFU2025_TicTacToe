@@ -20,7 +20,7 @@ def register(request):
     serializer = RegisterSerializer(data=request.data)
     if serializer.is_valid():
         user = serializer.save()
-        return Response({'message': 'User created successfully'}, status=status.HTTP_201_CREATED)
+        return Response({'message': 'Пользователь успешно создан'}, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['POST'])
@@ -33,16 +33,16 @@ def login_view(request):
     if user:
         login(request, user)
         return Response({
-            'message': 'Login successful',
+            'message': 'Успешный вход',
             'user': UserSerializer(user).data
         })
-    return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+    return Response({'error': 'Неверные данные'}, status=status.HTTP_401_UNAUTHORIZED)
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def logout_view(request):
     logout(request)
-    return Response({'message': 'Logout successful'})
+    return Response({'message': 'Успешный выход'})
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -64,7 +64,7 @@ def room_list(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def create_room(request):
-    name = request.data.get('name', f"{request.user.username}'s room")
+    name = request.data.get('name', f"Комната {request.user.username}")
     room = Room.objects.create(name=name, creator=request.user)
     room.players.add(request.user)
     return Response(RoomSerializer(room).data, status=status.HTTP_201_CREATED)
@@ -75,13 +75,13 @@ def join_room(request, room_id):
     room = get_object_or_404(Room, id=room_id)
     
     if room.status != Room.WAITING:
-        return Response({'error': 'Room is not available'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'error': 'Комната недоступна'}, status=status.HTTP_400_BAD_REQUEST)
     
     if room.player_count >= 2:
-        return Response({'error': 'Room is full'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'error': 'Комната заполнена'}, status=status.HTTP_400_BAD_REQUEST)
     
     if request.user in room.players.all():
-        return Response({'error': 'Already in room'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'error': 'Уже в комнате'}, status=status.HTTP_400_BAD_REQUEST)
     
     room.players.add(request.user)
     
@@ -138,7 +138,7 @@ def quick_game(request):
     else:
         # Create new room
         room = Room.objects.create(
-            name=f"{request.user.username}'s quick game",
+            name=f"Быстрая игра {request.user.username}",
             creator=request.user
         )
         room.players.add(request.user)
@@ -154,7 +154,7 @@ def room_detail(request, room_id):
     room = get_object_or_404(Room, id=room_id)
     
     if request.user not in room.players.all():
-        return Response({'error': 'Not a player in this room'}, status=status.HTTP_403_FORBIDDEN)
+        return Response({'error': 'Не является игроком в комнате'}, status=status.HTTP_403_FORBIDDEN)
     
     data = RoomSerializer(room).data
     
@@ -173,12 +173,12 @@ def make_move(request, room_id):
     room = get_object_or_404(Room, id=room_id)
     
     if request.user not in room.players.all():
-        return Response({'error': 'Not a player in this room'}, status=status.HTTP_403_FORBIDDEN)
+        return Response({'error': 'Не является игроком в комнате'}, status=status.HTTP_403_FORBIDDEN)
     
     try:
         game = room.game
     except Game.DoesNotExist:
-        return Response({'error': 'No active game'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'error': 'Нет активной игры'}, status=status.HTTP_400_BAD_REQUEST)
     
     serializer = MakeMoveSerializer(data=request.data)
     if not serializer.is_valid():
@@ -225,14 +225,14 @@ def leave_room(request, room_id):
     room = get_object_or_404(Room, id=room_id)
     
     if request.user not in room.players.all():
-        return Response({'error': 'Not in this room'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'error': 'Не является игроком в комнате'}, status=status.HTTP_400_BAD_REQUEST)
     
     room.players.remove(request.user)
     
     # Delete room if empty
     if room.player_count == 0:
         room.delete()
-        return Response({'message': 'Left room and room deleted'})
+        return Response({'message': 'Вышел из комнаты, комната удалена'})
     
     # If game was in progress, end it
     if room.status == Room.PLAYING:
@@ -263,4 +263,4 @@ def leave_room(request, room_id):
         room.status = Room.FINISHED
         room.save()
     
-    return Response({'message': 'Left room'})
+    return Response({'message': 'Вышел из комнаты'})

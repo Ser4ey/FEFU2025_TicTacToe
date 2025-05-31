@@ -109,10 +109,10 @@ class Game(models.Model):
     
     def make_move(self, row, col, player):
         if self.status != self.ONGOING:
-            return False, "Game is not ongoing"
+            return False, "Игра на данный момент не идет"
         
         if self.board[row][col] != '':
-            return False, "Cell is already occupied"
+            return False, "Клетка уже занята"
         
         # Determine player symbol
         if player == self.player_x:
@@ -120,11 +120,11 @@ class Game(models.Model):
         elif player == self.player_o:
             symbol = self.O
         else:
-            return False, "Player not in this game"
+            return False, "Игрока нет в игре"
         
         # Check if it's player's turn
         if symbol != self.current_turn:
-            return False, "Not your turn"
+            return False, "Сейчас не твой ход!"
         
         # Make the move
         self.board[row][col] = symbol
@@ -144,4 +144,4 @@ class Game(models.Model):
             self.current_turn = self.O if self.current_turn == self.X else self.X
         
         self.save()
-        return True, "Move successful"
+        return True, "Успешно сделан ход"
