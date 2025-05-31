@@ -23,7 +23,7 @@ function GameRoom({ user, onLogout }) {
       setGame(response.data.game);
       setError('');
     } catch (error) {
-      console.error('Error fetching room data:', error);
+      console.error('Ошибка загрузки данных комнаты:', error);
       setError('Ошибка загрузки данных комнаты');
     } finally {
       setLoading(false);
@@ -48,7 +48,7 @@ function GameRoom({ user, onLogout }) {
       });
       setGame(response.data.game);
     } catch (error) {
-      console.error('Error making move:', error);
+      console.error('Ошибка при совершении хода:', error);
       alert(error.response?.data?.error || 'Ошибка при совершении хода');
     }
   };
@@ -59,7 +59,7 @@ function GameRoom({ user, onLogout }) {
         await axios.post(`/api/rooms/${roomId}/leave/`);
         navigate('/');
       } catch (error) {
-        console.error('Error leaving room:', error);
+        console.error('Ошибка при выходе из комнаты:', error);
       }
     }
   };
