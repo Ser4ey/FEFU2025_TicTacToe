@@ -34,7 +34,7 @@ function GameRoom({ user, onLogout }) {
     if (!game || game.status !== 'ongoing') return;
     if (game.board[row][col] !== '') return;
     
-    // Проверяем, чей ход
+    //проверяем, чей ход
     const isPlayerX = game.player_x.id === user.id;
     const isPlayerO = game.player_o.id === user.id;
     const isMyTurn = (isPlayerX && game.current_turn === 'X') || (isPlayerO && game.current_turn === 'O');

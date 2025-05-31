@@ -85,23 +85,23 @@ class Game(models.Model):
     def check_winner(self):
         board = self.board
         
-        # Check rows
+        #проверка по строкам
         for row in board:
             if row[0] == row[1] == row[2] != '':
                 return row[0]
         
-        # Check columns
+        #проверка по столбцам
         for col in range(3):
             if board[0][col] == board[1][col] == board[2][col] != '':
                 return board[0][col]
         
-        # Check diagonals
+        #проверка по диагоналям
         if board[0][0] == board[1][1] == board[2][2] != '':
             return board[0][0]
         if board[0][2] == board[1][1] == board[2][0] != '':
             return board[0][2]
         
-        # Check for draw
+        #ничья
         if all(cell != '' for row in board for cell in row):
             return 'draw'
         
@@ -114,7 +114,7 @@ class Game(models.Model):
         if self.board[row][col] != '':
             return False, "Клетка уже занята"
         
-        # Determine player symbol
+        #чекаем кто сейчас ходит
         if player == self.player_x:
             symbol = self.X
         elif player == self.player_o:
@@ -122,14 +122,14 @@ class Game(models.Model):
         else:
             return False, "Игрока нет в игре"
         
-        # Check if it's player's turn
+        #чекаем если сейчас ход валидный
         if symbol != self.current_turn:
             return False, "Сейчас не твой ход!"
         
-        # Make the move
+        #ходим
         self.board[row][col] = symbol
         
-        # Check for winner
+        #проверяем на победителя
         result = self.check_winner()
         if result == 'X':
             self.status = self.X_WINS
@@ -140,7 +140,7 @@ class Game(models.Model):
         elif result == 'draw':
             self.status = self.DRAW
         else:
-            # Switch turn
+            #меняем очередь
             self.current_turn = self.O if self.current_turn == self.X else self.X
         
         self.save()
