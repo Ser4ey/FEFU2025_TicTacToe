@@ -240,17 +240,17 @@ def leave_room(request, room_id):
     if request.user not in room.players.all():
         return Response({'error': 'Не является игроком в комнате'}, status=status.HTTP_400_BAD_REQUEST)
 
-    # Найдем связанную игру, если она есть
+    #найдем связанную игру если она есть
     game = None
     try:
         game = room.game
     except Game.DoesNotExist:
         pass # Игры нет, ничего страшного
 
-    # Если игра существует и была в процессе, начисляем победу/поражение и обновляем статистику
+    #если игра существует и была в процессе  начисляем победу/поражение и обновляем статистику
     if game and game.status == Game.ONGOING:
-         other_player = room.players.exclude(id=request.user.id).first() # Ищем другого игрока ДО удаления текущего из many-to-many
-         if other_player: # Убеждаемся, что другой игрок существует
+         other_player = room.players.exclude(id=request.user.id).first()
+         if other_player:
             game.winner = other_player
             game.status = Game.X_WINS if other_player == game.player_x else Game.O_WINS
             game.finished_at = timezone.now()
@@ -268,19 +268,18 @@ def leave_room(request, room_id):
             loser_profile.losses += 1
             loser_profile.save()
 
-    # Удаляем объект игры, если он был найден. Это должно происходить всегда, если игра была связана с комнатой
+    #удаляем объект игры, если он был найден
     if game:
         game.delete()
 
-    room.players.remove(request.user) # Удаляем игрока из комнаты ПОСЛЕ обработки статистики и игры
+    room.players.remove(request.user) #удаляем игрока из комнаты ПОСЛЕ обработки статистики и игры
 
     #если комната пустая - удаляем её
     if room.player_count == 0:
         room.delete()
         return Response({'message': 'Вышел из комнаты, комната удалена'})
 
-    # Если остался один игрок, переводим комнату в статус ожидания
-    # Эта проверка теперь происходит после удаления игрока
+    # Если остался один игрок, переводим комнату в статус ожидания, чтобы другие могли зайти и поиграть
     if room.player_count == 1:
         room.status = Room.WAITING
         room.save()
