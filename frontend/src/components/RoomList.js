@@ -21,7 +21,7 @@ function RoomList({ user, onLogout }) {
       const response = await axios.get('/api/rooms/');
       setRooms(response.data);
     } catch (error) {
-      console.error('Error fetching rooms:', error);
+      console.error('Ошибка загрузки данных комнаты:', error);
     } finally {
       setLoading(false);
     }
@@ -39,7 +39,7 @@ function RoomList({ user, onLogout }) {
       const roomId = response.data.id;
       navigate(`/room/${roomId}`);
     } catch (error) {
-      console.error('Error creating room:', error);
+      console.error('Ошибка при создании комнаты:', error);
       alert('Ошибка при создании комнаты');
     } finally {
       setCreating(false);
@@ -51,7 +51,7 @@ function RoomList({ user, onLogout }) {
       await axios.post(`/api/rooms/${roomId}/join/`);
       navigate(`/room/${roomId}`);
     } catch (error) {
-      console.error('Error joining room:', error);
+      console.error('Ошибка при присоединении к комнате:', error);
       alert(error.response?.data?.error || 'Ошибка при присоединении к комнате');
     }
   };
