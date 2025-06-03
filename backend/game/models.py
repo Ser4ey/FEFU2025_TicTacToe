@@ -68,7 +68,7 @@ class Game(models.Model):
     player_x = models.ForeignKey(User, on_delete=models.CASCADE, related_name='games_as_x')
     player_o = models.ForeignKey(User, on_delete=models.CASCADE, related_name='games_as_o')
     current_turn = models.CharField(max_length=1, choices=SYMBOL_CHOICES, default=X)
-    board = models.JSONField(default=list)  # 3x3 board as list of lists
+    board = models.JSONField(default=list)  # 3x3 поле как list of lists
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default=ONGOING)
     winner = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True, related_name='won_games')
     created_at = models.DateTimeField(auto_now_add=True)

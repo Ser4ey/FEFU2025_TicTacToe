@@ -12,7 +12,7 @@ function GameRoom({ user, onLogout }) {
 
   useEffect(() => {
     fetchRoomData();
-    const interval = setInterval(fetchRoomData, 2000); // Обновляем каждые 2 секунды
+    const interval = setInterval(fetchRoomData, 1000); // Обновляем каждую 1 секунду
     return () => clearInterval(interval);
   }, [roomId]);
 

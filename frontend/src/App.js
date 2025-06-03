@@ -9,7 +9,7 @@ import GameRoom from './components/GameRoom';
 import Stats from './components/Stats';
 import './App.css';
 
-// Configure axios defaults
+
 axios.defaults.baseURL = 'http://localhost:8000';
 axios.defaults.xsrfCookieName = 'csrftoken';
 axios.defaults.xsrfHeaderName = 'X-CSRFToken';
@@ -25,7 +25,7 @@ function App() {
 
   const checkAuth = async () => {
     try {
-      // Get CSRF token first
+      // Получаем CSRF токен
       await axios.get('/api/csrf/');
       
       const response = await axios.get('/api/user/');
