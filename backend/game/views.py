@@ -97,8 +97,6 @@ def join_room(request, room_id):
         room.status = Room.PLAYING
         room.save()
 
-        # ЯВНО проверяем и удаляем любую существующую игру для этой комнаты, используя filter().delete()
-        # Этот метод более надежен для гарантии немедленного удаления в рамках транзакции.
         Game.objects.filter(room=room).delete()
 
         #создание новой игры
